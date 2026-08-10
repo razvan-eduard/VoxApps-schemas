@@ -14,3 +14,16 @@ apps read it.
 An app fetches each file from `<repo>/main/remote-schemas/<folder>/<file>` and compares it by hash
 with the copy in force. A copy that differs and still parses is written to the app's `filesDir` and
 becomes the source of truth until the user resets it — see `RemoteSchema` in `:core:services`.
+
+**Editing a file here is not enough.** These are adopted unattended at launch and they say where
+requests go, so an app refuses a changed schema from this repository unless its hash appears in
+`manifest.json` and that manifest is signed. Signing happens on a developer machine — `./scripts/vox schemas sign` — because the key is
+deliberately kept out of GitHub, where the release keystore already lives. `verify-schemas.yml`
+checks the result on every push touching this folder, and fails if the manifest and the schemas
+disagree. An unsigned change is not dangerous — it simply never
+reaches anyone.
+
+The manifest also carries a `serial`, and an app refuses one no newer than the last it accepted. A
+valid signature does not make a manifest *current*: without that counter, anyone able to serve these
+files could replay an old, genuinely signed manifest and walk every install back to an earlier
+schema — one naming an endpoint since abandoned, say — with every signature checking out.
